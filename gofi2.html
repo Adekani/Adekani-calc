@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gofi</title>
+<style>
+/* -------- General Reset -------- */
+* { margin:0; padding:0; box-sizing:border-box; }
+body, html { width:100%; height:100%; overflow:hidden; background:#000; color:#FFD700; font-family:sans-serif; }
+#loading { position:fixed; top:0; left:0; width:100%; height:100%; background:#000; display:flex; align-items:center; justify-content:center; z-index:9999; }
+#loading img { width:150px; height:auto; animation:spin 2s linear infinite; }
+@keyframes spin { 0% { transform:rotate(0deg); } 100% { transform:rotate(360deg); } }
+
+/* -------- Slideshow Container -------- */
+#slideshow { position:relative; width:100%; height:100%; perspective:2000px; display:flex; align-items:center; justify-content:center; }
+.card { position:absolute; width:300px; height:400px; background:#111; border:2px solid #FFD700; border-radius:20px; overflow:hidden; cursor:pointer; transition:transform 1s, opacity 1s; box-shadow:0 0 30px #FFD700; display:flex; align-items:center; justify-content:center; }
+.card img { width:100%; height:100%; object-fit:cover; user-select:none; pointer-events:none; }
+
+/* Expanded View */
+#overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); display:none; align-items:center; justify-content:center; z-index:1000; }
+#overlay img { max-width:90%; max-height:90%; border:2px solid #FFD700; border-radius:15px; }
+
+/* Dragging */
+.dragging { position:absolute; z-index:2000; pointer-events:none; transform:scale(1.2); transition:none; }
+
+/* Text Title */
+#title { position:absolute; top:20px; width:100%; text-align:center; font-size:3rem; font-weight:bold; color:#FFD700; letter-spacing:3px; }
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <img src="1761760161.png" alt="Loading...">
+</div>
+
+<div id="title">Gofi</div>
+<div id="slideshow"></div>
+<div id="overlay"><img src="" alt=""></div>
+
+<script>
+const images = [
+  "1755625580.png",
+  "1756315123.png",
+  "1757011358.png",
+  "1758741653.png",
+  "1761760161.png"
+];
+
+const slideshow = document.getElementById('slideshow');
+const overlay = document.getElementById('overlay');
+const overlayImg = overlay.querySelector('img');
+const loading = document.getElementById('loading');
+
+let cards = [];
+let currentIndex = 0;
+let autoplay = true;
+let inactivityTimer;
+
+function createCards() {
+  images.forEach((src, i) => {
+    const card = document.createElement('div');
+    card.classList.add('card');
+    card.style.transform = `rotateY(${i * 30}deg) translateZ(600px)`;
+    const img = document.createElement('img');
+    img.src = src;
+    card.appendChild(img);
+    slideshow.appendChild(card);
+    cards.push(card);
+
+    // Click to expand
+    card.addEventListener('click', () => {
+      overlayImg.src = src;
+      overlay.style.display = 'flex';
+      pauseAutoplay();
+    });
+
+    // Long press drag
+    let pressTimer, isDragging=false;
+    card.addEventListener('mousedown', startPress);
+    card.addEventListener('touchstart', startPress);
+    function startPress(e){
+      e.preventDefault();
+      pressTimer = setTimeout(() => startDrag(e, card), 500);
+    }
+    card.addEventListener('mouseup', cancelPress);
+    card.addEventListener('mouseleave', cancelPress);
+    card.addEventListener('touchend', cancelPress);
+    function cancelPress(){
+      clearTimeout(pressTimer);
+    }
+  });
+}
+
+function startDrag(e, card){
+  isDragging = true;
+  card.classList.add('dragging');
+  const rect = card.getBoundingClientRect();
+  let offsetX = e.clientX ? e.clientX - rect.left : e.touches[0].clientX - rect.left;
+  let offsetY = e.clientY ? e.clientY - rect.top : e.touches[0].clientY - rect.top;
+
+  function move(e){
+    let x = e.clientX ? e.clientX : e.touches[0].clientX;
+    let y = e.clientY ? e.clientY : e.touches[0].clientY;
+    card.style.left = (x - offsetX) + 'px';
+    card.style.top = (y - offsetY) + 'px';
+  }
+
+  function end(){
+    document.removeEventListener('mousemove', move);
+    document.removeEventListener('mouseup', end);
+    document.removeEventListener('touchmove', move);
+    document.removeEventListener('touchend', end);
+    setTimeout(() => { // Snap back after 5s
+      card.style.left = '';
+      card.style.top = '';
+      card.classList.remove('dragging');
+      isDragging = false;
+    }, 5000);
+  }
+
+  document.addEventListener('mousemove', move);
+  document.addEventListener('mouseup', end);
+  document.addEventListener('touchmove', move);
+  document.addEventListener('touchend', end);
+}
+
+overlay.addEventListener('click', () => {
+  overlay.style.display = 'none';
+  resumeAutoplay();
+});
+
+function rotateCards() {
+  cards.forEach((card, i) => {
+    let angle = ((i - currentIndex) * 30);
+    card.style.transform = `rotateY(${angle}deg) translateZ(600px)`;
+    card.style.opacity = (i === currentIndex) ? '1' : '0.5';
+  });
+}
+
+function nextCard() {
+  if(!autoplay) return;
+  currentIndex = (currentIndex + 1) % cards.length;
+  rotateCards();
+}
+
+function pauseAutoplay(){
+  autoplay = false;
+  clearTimeout(inactivityTimer);
+  inactivityTimer = setTimeout(() => { autoplay=true; }, 7000);
+}
+
+function resumeAutoplay(){
+  autoplay = true;
+  clearTimeout(inactivityTimer);
+}
+
+createCards();
+rotateCards();
+
+// Autoplay every 3s per card
+setInterval(nextCard, 3000);
+
+// Remove loading screen after 2s
+setTimeout(() => { loading.style.display='none'; }, 2000);
+
+// Swipe interaction
+let startX;
+slideshow.addEventListener('mousedown', (e)=>{ startX=e.clientX; pauseAutoplay(); });
+slideshow.addEventListener('touchstart', (e)=>{ startX=e.touches[0].clientX; pauseAutoplay(); });
+
+slideshow.addEventListener('mouseup', (e)=>{
+  let diff = e.clientX - startX;
+  if(diff>50) currentIndex = (currentIndex -1 + cards.length) % cards.length;
+  if(diff<-50) currentIndex = (currentIndex +1) % cards.length;
+  rotateCards();
+  resumeAutoplay();
+});
+slideshow.addEventListener('touchend', (e)=>{
+  let diff = e.changedTouches[0].clientX - startX;
+  if(diff>50) currentIndex = (currentIndex -1 + cards.length) % cards.length;
+  if(diff<-50) currentIndex = (currentIndex +1) % cards.length;
+  rotateCards();
+  resumeAutoplay();
+});
+</script>
+
+</body>
+</html>
