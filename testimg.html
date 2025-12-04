@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Image Slideshow</title>
+<style>
+  body {
+    background: #111;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+  }
+
+  .slideshow {
+    width: 600px;
+    height: 400px;
+    position: relative;
+    overflow: hidden;
+    border-radius: 10px;
+  }
+
+  .slideshow img {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    animation: fade 16s infinite;
+  }
+
+  .slideshow img:nth-child(1) { animation-delay: 0s; }
+  .slideshow img:nth-child(2) { animation-delay: 4s; }
+  .slideshow img:nth-child(3) { animation-delay: 8s; }
+  .slideshow img:nth-child(4) { animation-delay: 12s; }
+
+  @keyframes fade {
+    0% { opacity: 0; }
+    10% { opacity: 1; }
+    40% { opacity: 1; }
+    50% { opacity: 0; }
+    100% { opacity: 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="slideshow">
+  <img src="https://images2.imgbox.com/c0/52/DXqtmEnd.jpg" alt="">
+  <img src="https://images2.imgbox.com/f8/e0/xnkZdetd.jpg" alt="">
+  <img src="https://images2.imgbox.com/10/cf/XeiLAsm4.jpg" alt="">
+  <img src="https://images2.imgbox.com/5e/64/5iS6YWSq.jpg" alt="">
+</div>
+
+</body>
+</html>
